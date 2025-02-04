@@ -7,60 +7,55 @@
 
 import SwiftUI
 import Combine
+/*
+ Represents an alert that can be shown in the app
+    title: The main heading of the alert
+    message: Additional information or context.
+    buttonTitle: The label for the dismiss button.
+    action: A closure to execute when the button is tapped.
+ */
+
 
 struct ContentView: View {
-    @State private var timeRemaining = 1500 // 25 minutes in seconds
+    let initialTime = 1500 // 25 minutes in seconds
+    @State private var timeRemaining: Int = 1500
     @State private var timerRunning = false
     @State private var timerSubscription: AnyCancellable? // Manages the timer subscription, start and cancel as needed
-    @State private var showAlert = false // Controls the display of the completion alert
+    @State private var alertInfo: AlertInfo? = nil // Hold alerts information
+    @State private var tasks: [TaskItem] = []
+    @State private var newTaskTitle: String = ""
     
     var body: some View {
         VStack(spacing: 20) {
-            Text(timeString(secondsRemaining: timeRemaining))
-                .font(.system(size: 60))
-                .padding()
-            
+            TimerDisplay(timeRemaining: timeRemaining)
+
             HStack(spacing: 40) {
-                Button(action: {
-                    // Start/Pause logic
-                    toggleTimer()
-                }) {
-                    //ternary operator: if-else | if timer running is true, display pause | otherweise display play
-                    Image(systemName: timerRunning ? "pause.circle.fill" : "play.circle.fill")
-                        .resizable()
-                        .frame(width: 80, height: 80)
-                }
-                
-                Button(action: {
-                    // Reset logic
-                    resetTimer()
-                }) {
-                    Image(systemName: "stop.circle.fill")
-                        .resizable()
-                        .frame(width: 80, height: 80)
-                }
+                PlayPauseButton(timerRunning: timerRunning, action: toggleTimer)
+                StopButton(action: resetTimer)
             }
+            
+            Divider().padding(.vertical)
+            
+            ToDoListView(
+                tasks: $tasks,
+                newTaskTitle: $newTaskTitle,
+                addTask: addTask
+            )
+            
         }
-        .alert(isPresented: $showAlert) {
+        .alert(item: $alertInfo) { info in
             Alert(
-                title: Text("Time's up"),
-                message: Text("Great job! Time for a short break"),
-                dismissButton: .default(Text("OK")) {
-                    resetTimer()
-                }
+                title: Text(info.title) ,
+                message: Text(info.message),
+                dismissButton: .default(Text(info.buttonTitle), action:
+                    info.action)
             )
         }
        
     }
     
-    
-    func timeString(secondsRemaining: Int) -> String {
-        let minutes = secondsRemaining / 60
-        let seconds = secondsRemaining % 60
-        return String(format: "%02i:%02i", minutes, seconds)
-    }
-    
-    // Resume or starts the timer
+
+    // Toggles the timer between running and pause states
     func toggleTimer() {
         if timerRunning {
             pauseTimer()
@@ -79,7 +74,7 @@ struct ContentView: View {
                 } else {
                     self.timerSubscription?.cancel()
                     self.timerRunning = false
-                    self.showAlert = true
+                    self.showCompletionAlert()
                 }
                 
             }
@@ -96,9 +91,27 @@ struct ContentView: View {
     // Resets the timer to the initial values based on session type
     func resetTimer() {
         pauseTimer()
-        timeRemaining = 1500
+        timeRemaining = initialTime
+    }
+    
+    func showCompletionAlert() {
+        alertInfo = AlertInfo(
+            title: "Completed",
+            message: "Your 25 minutes has ended", buttonTitle: "OK",
+            action: {
+                print("Alert OK button tapped")
+            })
+    }
+    
+    func addTask() {
+        return
     }
 }
+
+
+
+
+
 
 #Preview {
     ContentView()
